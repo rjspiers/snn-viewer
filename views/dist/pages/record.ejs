@@ -1,0 +1,250 @@
+<!-- views/pages/record.ejs -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<% include ../partials/head %>
+	<% include ../partials/head-leaflet-map %>
+</head>
+<body class="container" onload="init()">
+
+	<header>
+		<% include ../partials/header %>
+	</header>
+
+	<main>
+			<div class="section">
+			<h3># <span>Postgres data view: /Record/<%= resultsRows[0].snn_ref %></span></h3>
+			<p>Postgres is queried when page is requested.</p>
+			<hr>
+			<div>
+				<div class="row">
+					<div class="col-md-12">
+						<table>
+							<!-- <tr><th colspan="6">Polling Place Information</th></tr> -->
+							<tr>
+								<th>snn_ref</th>
+								<th>development_type</th>
+								<th>status</th>
+								<th>planning_ref</th>
+								<th>development_description</th>
+								<th>site_location</th>
+							</tr>
+				<!-- 			<tr>
+								<td><%= resultsRows[0].ogc_fid %></td>
+								<td><%= resultsRows[0].register %></td>
+								<td><%= resultsRows[0].pollingplace %></td>
+								<td>this row is manually inserted</td>
+							</tr> -->
+							<% resultsRows.forEach(function(row) { %>
+								<tr>
+									<td><%= row.snn_ref %></td>
+									<td><%= row.development_type %></td>
+									<td><%= row.status %></td>
+									<td><%= row.planning_ref %></td>
+									<td><%= row.development_description %></td>
+									<td><%= row.site_location %></td>
+								</tr>
+							<% }); %>
+						</table>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md-12">
+						<div id="mapid" style="width: 100%; height: 400px; margin-top:25px;"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+<script>
+	// just load a map
+	// var map = L.map('mapid').setView([51.237177, -0.575000], 12);
+	
+	var crs = new L.Proj.CRS(
+		'EPSG:27700',
+		'+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +datum=OSGB36 +units=m +no_defs',
+		{
+			resolutions: [1600,800,400,200,100,50,25,10,5,2.5,1,0.5,0.25,0.125,0.0625]
+		}
+	);
+
+	var bngproj = '+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +datum=OSGB36 +units=m +no_defs';
+	var wgs = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs';
+	
+	var toCoords = proj4(bngproj, wgs, [<%= resultsRows[0].x %>,<%= resultsRows[0].y %>]);
+	var x = toCoords[0];
+	var y = toCoords[1];
+	console.log(toCoords);
+	console.log(toCoords[0]);
+	console.log(toCoords[1]);
+	
+    var map;
+    function init(){
+    // initiate leaflet map
+	map = new L.Map('mapid', { 
+		crs: crs,
+		continuousWorld: true,
+		worldCopyJump: false,
+		<!-- center: [51.235222, -0.575075], -->
+		center: [y, x],
+		maxBounds: [ [51.3682,-0.8510], [51.1304,-0.3099] ],
+        zoom: 10
+	})
+	
+	//L.control.fullscreen().addTo(map);
+	
+    // Create a popup to return clicked coordinates on the map
+    var popup = L.popup();
+    function onMapClick(e) {
+        var bngproj = '+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +datum=OSGB36 +units=m +no_defs';
+        var bngcoords = proj4(bngproj, [e.latlng.lng, e.latlng.lat]);
+        popup
+            .setLatLng(e.latlng)
+            .setContent( 
+				"You clicked at " + bngcoords.toString().substring(0,6) + bngcoords.toString().substring(17,25) + '<br/>' + "Grid reference: NO" + bngcoords.toString().substring(1,6) + bngcoords.toString().substring(19,25)  + '<br>' + bngcoords.toString() + '<br>' +
+				'Int: <br>' +
+				parseInt(bngcoords[0]) + '<br>' + 
+				parseInt(bngcoords[1]) + '<br>' + 
+				'Float: <br>' +
+				parseFloat(bngcoords[0]) + '<br>' + 
+				parseFloat(bngcoords[1]) + '<br>' + 
+				'Float toFixed: <br>' + 
+				parseFloat(bngcoords[0]).toFixed(1) + '<br>' + 
+				parseFloat(bngcoords[1]).toFixed(1) + '<br>' 
+			
+			)
+            .openOn(map);
+    };
+    map.on('click', onMapClick);
+	
+	<!-- basemaps -->
+	
+	var ospremium = L.tileLayer.wms('https://static.ads.astuntechnology.com/guildford/ospremium/service', {
+		layers: 'ospremium',
+		format: 'image/png',
+		maxZoom: 14,
+		minZoom: 0,
+		continuousWorld: true,
+		attribution: 'Astun Data Service &copy; Ordnance Survey.'
+	}).addTo(map);
+	
+	var ospremiumbw = L.tileLayer.wms('https://static.ads.astuntechnology.com/guildford/ospremium/service', {
+		layers: 'ospremiumbw',
+		format: 'image/png',
+		maxZoom: 14,
+		minZoom: 0,
+		continuousWorld: true,
+		attribution: 'Astun Data Service &copy; Ordnance Survey.'
+	});
+	
+	var aerial2014 = L.tileLayer.wms('http://static.ads.astuntechnology.com/surrey/surrey/service', {
+		layers: 'aerial2014',
+		format: 'image/png',
+		maxZoom: 14,
+		minZoom: 0,
+		continuousWorld: true,
+		attribution: 'Astun Data Service &copy; Ordnance Survey.'
+	});
+	
+	<!-- basemaps end -->
+	
+	<!-- wms layers -->
+	var wmslayer = L.tileLayer.wms(
+		'http://gis.guildford.gov.uk/ishare5.2.web/getows.ashx?mapsource=GBC/GBC_Internal_Map_Service&', {
+		layers: ['epoch1871index', 'HISTORIC_GRID_1871_DB',],
+		<!-- opacity: 0.8, -->
+		<!-- bgcolor: '80bde3', -->
+		transparent: true
+	});
+	
+	<!-- layers -->
+	// add geojson without any styling or function
+	//borough_layer = L.geoJson(gbc_boundary_db);
+	//wards_layer = L.geoJson(wards);
+	<!-- layers end -->
+	
+	<!-- marker -->	
+	var marker = L.marker(new L.LatLng(y, x));
+	marker.bindTooltip("<i>test<i>"); // initial content
+	marker.setTooltipContent('<b>Register: <%= resultsRows[0].snn_ref %></b>'); // set content
+	marker.openTooltip();
+	marker.addTo(map);
+	<!-- marker end -->	
+	
+	
+	<!-- scale -->
+	
+	<!-- set crs.distance as workaround for proj4leaflet which has no distance() function needed for scalebar -->
+	crs.distance = L.CRS.Earth.distance;
+	crs.R = 6378137;
+	
+	L.control.scale({imperial: false, maxWidth: 100}).addTo(map);
+	<!-- scale end -->
+	
+	<!-- info panel in top right -->
+	// this can be updated based on mouse hover over features
+	// just call the function onMouseover and config the properties the function should use
+	var info = L.control();
+
+	info.onAdd = function (map) {
+		this._div = L.DomUtil.create('div', 'info title-box'); // create a div with a class "info"
+		this.update();
+		return this._div;
+	};
+
+	// method that we will use to update the control based on feature properties passed
+	info.update = function (properties) {
+		this._div.innerHTML = '<h4>Grid Tile</h4>' + (properties ?
+			properties.fid + ' of 130<br />' : 'Hover over a tile');
+	};
+
+	<!-- info.addTo(map); -->
+	<!-- info panel end -->
+	
+	
+	<!-- legend -->
+	var legend = L.control({position: 'bottomright'});
+
+	legend.onAdd = function (map) {
+
+		var div = L.DomUtil.create('div', 'info legend');
+
+		div.innerHTML += '<i style="background:#e31a1c' + '"></i>' + 'Grid' + '<br>'
+		div.innerHTML += '<i class="circle" style="background:blue;' + '"></i>' + 'Ward' + '<br>'
+		div.innerHTML += '<i class="line" style="background:black;' + '"></i>' + 'Borough Boundary' + '<br>'
+
+		return div;
+	};
+
+	<!-- legend.addTo(map); -->
+	<!-- legend end -->
+	
+	
+	<!-- layer control -->
+	var baseMaps = {
+		"ospremium": ospremium,
+		"ospremiumbw": ospremiumbw,
+		"aerial2014": aerial2014
+	};
+	
+	var overlayMaps = {
+		"wmslayer": wmslayer
+	};
+	
+	L.control.layers(baseMaps, null, {position: 'topright'}).addTo(map);
+	<!-- layer control end -->
+	
+	
+	} // function init()
+</script>
+		
+
+	</main>
+
+	<footer>
+		<% include ../partials/footer %>
+	</footer>
+    
+</body>
+</html>

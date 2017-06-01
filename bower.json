@@ -1,0 +1,33 @@
+{
+  "name": "snn-viewer",
+  "description": "web interface for viewing snn records",
+  "main": "server.js",
+  "authors": [
+    "rjspiers"
+  ],
+  "license": "ISC",
+  "homepage": "",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "leaflet": "^1.0.3",
+    "proj4": "^2.4.3",
+    "Proj4Leaflet": "proj4leaflet#^1.0.1",
+    "bootstrap": "^3.3.7"
+  },
+  "overrides": {
+    "bootstrap": {
+      "main": [
+        "dist/js/bootstrap.js",
+        "dist/css/bootstrap.min.css",
+        "less/bootstrap.less"
+      ]
+    }
+  }
+}
